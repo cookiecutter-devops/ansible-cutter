@@ -17,7 +17,7 @@ if you get a bunch of errors on a mac then try this:
 You can easily add this to your `~/.cookiecutterrc` something like this:
 
     abbreviations:
-      ansible: https://github.com/boyvinall/ansible-cutter.git
+      ansible: https://github.com/cookiecutter-devops/ansible-cutter.git
 
 Then you can run the following command to create a new ansible project:
 

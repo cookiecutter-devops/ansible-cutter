@@ -1,8 +1,6 @@
 # {{cookiecutter.appname}}
 
 
-
-
 ## 配置目录结构
 
 脚本默认从 `configs/` 目录中选择配置，每个配置目录通常包含：

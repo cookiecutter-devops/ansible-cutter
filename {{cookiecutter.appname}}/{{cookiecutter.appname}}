@@ -1,5 +1,10 @@
 #!/bin/bash
 
+function error_exit {
+    echo "\$1" 1>&2
+    exit 1
+}
+
 # 显示脚本用法帮助信息
 function usage {
     cat <<EOF
@@ -15,6 +20,7 @@ Options:
     -c <configdir>          使用指定的配置目录（也可以通过 BOSI_CFG 环境变量指定）
     -n                      模拟运行 - 不做任何更改
     -E                      回显命令 - 不实际运行它们
+    -j                      并发执行命令
 
 Commands:
 
@@ -85,8 +91,7 @@ function choose_config {
   # 设置库存文件路径
   inventory=$configdir/inventory.txt
   if [ ! -f "$inventory" ]; then
-    echo "ERROR: $f doesn't exist"
-    exit 2
+    error_exit "ERROR: $inventory doesn't exist"
   fi
 
   # 加载所有 JSON 和 YAML 变量文件
@@ -121,6 +126,17 @@ function _ssh {
   ssh $ssh_args $ssh_user@$ssh_host "$@"
 }
 
+# 并发执行功能
+function parallel_exec {
+    local group=\$1
+    shift
+    for host in $(ansible-inventory -i $inventory --list | jq -Mr '._meta.hostvars | .[] | select(has("ansible_host")) | .ansible_host'); do
+        ( ssh -o StrictHostKeyChecking=no "$host" "$@" & )  # 后台执行 SSH
+    done
+    wait  # 等待所有后台进程完成
+}
+
+
 # 初始化变量
 VERBOSITY=          # Ansible 详细程度标志
 PLAYBOOK=ansible/site.yml  # 默认 playbook 文件路径
@@ -128,50 +144,21 @@ ECHO=               # 命令回显标志，为空表示实际执行命令
 EXTRA_OPTS=         # 传递给 Ansible 命令的额外选项
 
 # 定义短选项
-SHORT_OPTS=":hi:e:p:c:v?nE"
+SHORT_OPTS=":hi:e:p:c:v?nE:j"
 # The OSX getopt command doesn't support long options
 # 解析命令行选项
 while getopts $SHORT_OPTS optchar; do
 case "${optchar}" in
-  # 配置目录选项
-  c)
-    configdir=$OPTARG
-    ;;
-  # 库存文件路径选项
-  i)
-    INVENTORY="$OPTARG"
-    ;;
-  # 额外变量选项
-  e)
-    EXTRA_OPTS="$EXTRA_OPTS -e $OPTARG"
-    ;;
-  # 帮助选项
-  h)
-    usage
-    exit 0
-    ;;
-  # playbook 文件选项
-  p)
-    PLAYBOOK=$OPTARG
-    ;;
-  # 详细程度选项
-  v)
-    VERBOSITY="$VERBOSITY --verbose"
-    set -x  # 开启调试模式
-    ;;
-  # 模拟运行选项
-  n)
-    EXTRA_OPTS="$EXTRA_OPTS --check"
-    ;;
-  # 回显命令选项
-  E)
-    ECHO=echo  # 设置为 echo 表示只显示命令而不执行
-    ;;
-  # 无效选项
-  *)
-    echo "error"
-    exit 3
-    ;;
+    c) configdir=$OPTARG ;;
+    i) INVENTORY="$OPTARG" ;;
+    e) EXTRA_OPTS="$EXTRA_OPTS -e $OPTARG" ;;
+    h) usage; exit 0 ;;
+    p) PLAYBOOK=$OPTARG ;;
+    v) VERBOSITY="$VERBOSITY --verbose"; set -x ;;
+    n) EXTRA_OPTS="$EXTRA_OPTS --check" ;;
+    E) ECHO=echo ;;
+    j) PARALLEL=true ;;  # 启用并发执行
+    *) error_exit "Invalid option: -$OPTARG" ;;
 esac
 done
 
@@ -202,13 +189,21 @@ case "$ACTION" in
     ;;
   # 执行 ping 命令
   (ping)
-    $ECHO ansible-playbook -i $inventory $EXTRA_OPTS -e bosi_action=$ACTION $VERBOSITY "$@" ansible/ping.yml
+    if [ "$PARALLEL" = true ]; then
+        parallel_exec ping
+    else
+        $ECHO ansible-playbook -i $inventory $EXTRA_OPTS -e bosi_action=$ACTION $VERBOSITY "$@" ansible/ping.yml
+    fi
     ;;
   # 在主机组上执行命令
   (exec)
     ANSIBLE_GROUP=$1  # 获取主机组
     shift
-    $ECHO ansible -i $inventory $ANSIBLE_GROUP -m shell -a "$@"
+    if [ "$PARALLEL" = true ]; then
+        parallel_exec "$ANSIBLE_GROUP" "$@"
+    else
+        $ECHO ansible -i $inventory "$ANSIBLE_GROUP" -m shell -a "$@"
+    fi
     ;;
   # SSH 到主机
   (ssh)
@@ -242,14 +237,9 @@ case "$ACTION" in
     env | grep OS_
     ;;
   # 生成 bash 补全
-  (bash-completion)
-    bash_completion
-    exit 0
-    ;;
+  bash-completion) bash_completion; exit 0 ;;
   # 显示帮助信息
-  (help)
-    usage
-    ;;
+  help) usage ;;
   # 无效命令
   (*)
     if [ -z "$ACTION" ]; then
