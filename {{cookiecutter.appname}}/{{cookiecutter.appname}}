@@ -1,37 +1,36 @@
 #!/bin/bash
 
+# 显示脚本用法帮助信息
 function usage {
     cat <<EOF
 Usage: $0 [options] COMMAND [command options]
 
 Options:
 
-    -i <inventory_path>     Specify path to ansible inventory file
-    -h                      Show this usage information
-    -e <ansible variables>  Set additional variables as key=value or YAML/JSON passed to ansible-playbook
-    -v                      Increase verbosity of ansible-playbook
-    -p <playbook>           Run the specified playbook file instead of the default one
-    -c <configdir>          Use the specified config directory (can also be specified in the shell env as BOSI_CFG)
-    -n                      Dry run - make no changes
-    -E                      Echo the commands - don't actually run them
+    -i <inventory_path>     指定 Ansible 库存文件路径
+    -h                      显示此帮助信息
+    -e <ansible variables>  设置额外的变量，格式为 key=value 或 YAML/JSON,传递给 ansible-playbook
+    -v                      增加 ansible-playbook 的详细程度
+    -p <playbook>           运行指定的 playbook 文件，而不是默认文件
+    -c <configdir>          使用指定的配置目录（也可以通过 BOSI_CFG 环境变量指定）
+    -n                      模拟运行 - 不做任何更改
+    -E                      回显命令 - 不实际运行它们
 
 Commands:
 
-    requirements            Install requirements
-
-    config                  Run ansible
-
-    env                     Prints the currently-configured environment (inventory/env var)
-    ping                    Does an ansible ping (not ICMP) to all hosts
-    exec                    Execute arbitrary command on a specified ansible host group
-    ssh                     SSH to host using ansible inventory credentials/connection (requires ansible 2.4 or greater)
-    list                    List hosts in inventory (requires ansible 2.4 or greater)
-    rescan                  Scan SSH host keys into $HOME/.ssh/known_hosts
-
-    help
+    requirements            安装依赖
+    config                  运行 Ansible
+    env                     打印当前配置的环境（库存/环境变量）
+    ping                    对所有主机执行 Ansible ping(不是 ICMP ping)
+    exec                    在指定的 Ansible 主机组上执行任意命令
+    ssh                     使用 Ansible 库存凭证/连接 SSH 到主机（需要 Ansible 2.4 或更高版本）
+    list                    列出库存中的主机（需要 Ansible 2.4 或更高版本）
+    rescan                  将 SSH 主机密钥扫描到 $HOME/.ssh/known_hosts
+    help                    显示帮助信息
 EOF
 }
 
+# 提供 bash 补全功能的词列表
 function bash_completion {
 cat <<EOF
 -i
@@ -52,16 +51,21 @@ help
 EOF
 }
 
+# 选择和加载配置目录
 function choose_config {
+  # 如果没有指定 configdir，则尝试自动选择或提示用户选择
   if [ -z "$configdir" ]; then
     if [ ! -f .config ]; then
       echo "Please specify config dir:"
+      # 获取所有包含 inventory.txt 的配置目录
       configdirs=($(ls configs/*/inventory.txt | xargs -L1 dirname))
       numdirs=$(echo "$configdirs" | wc -l)
+      # 让用户选择配置目录
       select configdir in "${configdirs[@]}" "None of the above"; do
         if [ "$REPLY" -eq "$(($numdirs+1))" ]; then
           echo quit
         elif [ "$REPLY" -le "$numdirs" ]; then
+          # 将选择保存到 .config 文件
           echo "configdir=$configdir" > .config
         else
           echo "Bad choice, try again"
@@ -70,15 +74,22 @@ function choose_config {
         break
       done
     else
+      # 从 .config 文件加载配置
       source .config
     fi
   fi
+
+  # 如果存在环境文件，加载它
   if [ -f $configdir/env ]; then source $configdir/env; fi
+
+  # 设置库存文件路径
   inventory=$configdir/inventory.txt
   if [ ! -f "$inventory" ]; then
     echo "ERROR: $f doesn't exist"
     exit 2
   fi
+
+  # 加载所有 JSON 和 YAML 变量文件
   for f in $configdir/*.json $configdir/*.yml; do
     if [ -f "$f" ]; then
       EXTRA_OPTS="$EXTRA_OPTS -e @$f"
@@ -86,65 +97,77 @@ function choose_config {
   done
 }
 
+# 从 Ansible 库存获取配置值的内部函数
 function _ansible_config {
+  # 使用 ansible-inventory 获取指定主机的配置，然后用 jq 解析
   _config=$(ansible-inventory -i $inventory --host $1 | jq -Mr $2 2>/dev/null)
+  # 如果获取到的值不是 "null"，则输出它
   if [ $_config != "null" ];  then
     echo $_config
   fi
 }
 
+# 使用 Ansible 库存信息 SSH 到主机的内部函数
 function _ssh {
+  # 获取 SSH 公共参数
   local ssh_args=$(_ansible_config $1 .ansible_ssh_common_args)
+  # 获取 SSH 用户名
   local ssh_user=$(_ansible_config $1 .ansible_user)
+  # 获取 SSH 主机名
   local ssh_host=$(_ansible_config $1 .ansible_host)
+  # 移除第一个参数（主机名）
   shift
+  # 执行 SSH 连接
   ssh $ssh_args $ssh_user@$ssh_host "$@"
 }
 
-VERBOSITY=
-PLAYBOOK=ansible/site.yml
-ECHO=
-EXTRA_OPTS=
+# 初始化变量
+VERBOSITY=          # Ansible 详细程度标志
+PLAYBOOK=ansible/site.yml  # 默认 playbook 文件路径
+ECHO=               # 命令回显标志，为空表示实际执行命令
+EXTRA_OPTS=         # 传递给 Ansible 命令的额外选项
 
+# 定义短选项
 SHORT_OPTS=":hi:e:p:c:v?nE"
 # The OSX getopt command doesn't support long options
+# 解析命令行选项
 while getopts $SHORT_OPTS optchar; do
 case "${optchar}" in
-
+  # 配置目录选项
   c)
     configdir=$OPTARG
     ;;
-
+  # 库存文件路径选项
   i)
     INVENTORY="$OPTARG"
     ;;
-
+  # 额外变量选项
   e)
     EXTRA_OPTS="$EXTRA_OPTS -e $OPTARG"
     ;;
-
+  # 帮助选项
   h)
     usage
     exit 0
     ;;
-
+  # playbook 文件选项
   p)
     PLAYBOOK=$OPTARG
     ;;
-
+  # 详细程度选项
   v)
     VERBOSITY="$VERBOSITY --verbose"
-    set -x
+    set -x  # 开启调试模式
     ;;
-
+  # 模拟运行选项
   n)
     EXTRA_OPTS="$EXTRA_OPTS --check"
     ;;
-
+  # 回显命令选项
   E)
-    ECHO=echo
+    ECHO=echo  # 设置为 echo 表示只显示命令而不执行
     ;;
-
+  # 无效选项
   *)
     echo "error"
     exit 3
@@ -152,76 +175,89 @@ case "${optchar}" in
 esac
 done
 
+# 移除已解析的选项，保留命令和命令参数
 shift $((OPTIND-1))
+# 选择和加载配置
 choose_config
+# 导出 CONFIG_PATH 环境变量，指向配置目录的绝对路径
 export CONFIG_PATH=$(realpath $configdir)
 
+# 获取命令
 ACTION=$1
+# 移除命令，保留命令参数
 shift
+# 根据命令执行相应的操作
 case "$ACTION" in
-
-(clean)
-  $ECHO rm -f .config
-  ;;
-
-(config)
-  $ECHO ansible-playbook -i $inventory $EXTRA_OPTS $VERBOSITY -e _action=$ACTION "$@" $PLAYBOOK
-  ;;
-
-(requirements)
-  $ECHO ansible-galaxy install -r requirements.yml -p ansible/roles-external "$@"
-  ;;
-
-(ping)
-  $ECHO ansible-playbook -i $inventory $EXTRA_OPTS -e bosi_action=$ACTION $VERBOSITY "$@" ansible/ping.yml
-  ;;
-
-(exec)
-  ANSIBLE_GROUP=$1
-  shift
-  $ECHO ansible -i $inventory $ANSIBLE_GROUP -m shell -a "$@"
-  ;;
-
-(ssh)
-  _ssh "$@"
-  ;;
-
-(list)
-  ansible-inventory -i $inventory --list | jq -Mr '[._meta.hostvars | to_entries[] | {key: .key, value: .value.ansible_host}] | from_entries'
-  ;;
-
-(rescan)
-  HOSTS=$(ansible-inventory -i $inventory --list | jq -Mr '._meta.hostvars | .[] | select(has("ansible_host")) | .ansible_host')
-  for h in $HOSTS; do
-    ssh-keygen -R $h
-    a=$(dig +short $h)
-    if [ -n "$a" ]; then ssh-keygen -R $a; fi
-    ssh-keyscan -t rsa $h >> $HOME/.ssh/known_hosts
-  done
-  ;;
-
-(env)
-  echo -e "$inventory\n--"
-  env | grep OS_
-  ;;
-
-(bash-completion)
-  bash_completion
-  exit 0
-  ;;
-
-(help)
-  usage
-  ;;
-
-(*)
-  if [ -z "$ACTION" ]; then
-    echo -e "ERROR: No command specified\n"
-  else
-    echo -e "ERROR: '$ACTION' is invalid command\n"
-  fi
-  usage
-  exit 2
-  ;;
-
+  # 清理配置文件
+  (clean)
+    $ECHO rm -f .config
+    ;;
+  # 运行 Ansible 配置
+  (config)
+    $ECHO ansible-playbook -i $inventory $EXTRA_OPTS $VERBOSITY -e _action=$ACTION "$@" $PLAYBOOK
+    ;;
+  # 安装依赖
+  (requirements)
+    $ECHO ansible-galaxy install -r requirements.yml -p ansible/roles-external "$@"
+    ;;
+  # 执行 ping 命令
+  (ping)
+    $ECHO ansible-playbook -i $inventory $EXTRA_OPTS -e bosi_action=$ACTION $VERBOSITY "$@" ansible/ping.yml
+    ;;
+  # 在主机组上执行命令
+  (exec)
+    ANSIBLE_GROUP=$1  # 获取主机组
+    shift
+    $ECHO ansible -i $inventory $ANSIBLE_GROUP -m shell -a "$@"
+    ;;
+  # SSH 到主机
+  (ssh)
+    _ssh "$@"
+    ;;
+  # 列出库存中的主机
+  (list)
+    ansible-inventory -i $inventory --list | jq -Mr '[._meta.hostvars | to_entries[] | {key: .key, value: .value.ansible_host}] | from_entries'
+    ;;
+  # 重新扫描 SSH 主机密钥
+  (rescan)
+    # 获取所有主机名
+    HOSTS=$(ansible-inventory -i $inventory --list | jq -Mr '._meta.hostvars | .[] | select(has("ansible_host")) | .ansible_host')
+    for h in $HOSTS; do
+      # 移除旧的主机密钥
+      ssh-keygen -R $h
+      # 获取主机的 IP 地址
+      a=$(dig +short $h)
+      if [ -n "$a" ]; then
+        # 如果有 IP 地址，也移除旧的密钥
+        ssh-keygen -R $a;
+      fi
+      # 将新的主机密钥添加到 known_hosts 文件
+      ssh-keyscan -t rsa $h >> $HOME/.ssh/known_hosts
+    done
+    ;;
+  # 显示环境信息
+  (env)
+    echo -e "$inventory\n--"
+    # 显示所有以 OS_ 开头的环境变量
+    env | grep OS_
+    ;;
+  # 生成 bash 补全
+  (bash-completion)
+    bash_completion
+    exit 0
+    ;;
+  # 显示帮助信息
+  (help)
+    usage
+    ;;
+  # 无效命令
+  (*)
+    if [ -z "$ACTION" ]; then
+      echo -e "ERROR: No command specified\n"
+    else
+      echo -e "ERROR: '$ACTION' is invalid command\n"
+    fi
+    usage
+    exit 2
+    ;;
 esac
