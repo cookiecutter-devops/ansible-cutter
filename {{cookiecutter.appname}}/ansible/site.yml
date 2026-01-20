@@ -6,7 +6,7 @@
   any_errors_fatal: true
   hosts:
     - docker
-    - '&enable_httpd_True'
+    # - '&enable_httpd_True'
   serial: '{{ ansible_serial|default("0") }}'
   roles:
     - { role: httpd,
