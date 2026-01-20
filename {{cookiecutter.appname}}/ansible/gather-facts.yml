@@ -1,58 +1,58 @@
 ---
-# 确保了在任何情况下都能有效和灵活地收集所需的主机信息，同时避免冗余操作。
+# # 确保了在任何情况下都能有效和灵活地收集所需的主机信息，同时避免冗余操作。
 
-# 收集所有主机的事实，并创建一个新的组来标识是否使用了 --limit 参数。
-- name: Gather facts for all hosts
-  hosts: all
-  serial: '{{ ansible_serial|default("0") }}'
-  gather_facts: false
-  tasks:
-    - name: Gather facts
-      setup:
+# # 收集所有主机的事实，并创建一个新的组来标识是否使用了 --limit 参数。
+# - name: Gather facts for all hosts
+#   hosts: all
+#   serial: '{{ ansible_serial|default("0") }}'
+#   gather_facts: false
+#   tasks:
+#     - name: Gather facts
+#       setup:
 
-    - name: Group hosts to determine when using --limit
-      group_by:
-        key: "all_using_limit_{{ (ansible_play_batch | length) != (groups['all'] | length) }}"
-  tags: always
+#     - name: Group hosts to determine when using --limit
+#       group_by:
+#         key: "all_using_limit_{{ (ansible_play_batch | length) != (groups['all'] | length) }}"
+#   tags: always
 
-# 在检测到使用了 --limit 参数时执行，从而确保不会重复收集事实，并通过委托的方式收集其他主机的事实。
-- name: Gather facts for all hosts (if using --limit)
-  hosts: all_using_limit_True
-  serial: '{{ ansible_serial|default("0") }}'
-  gather_facts: false
-  vars:
-    batch_index: "{{ ansible_play_batch.index(inventory_hostname) }}"
-    batch_size: "{{ ansible_play_batch | length }}"
-    delegate_hosts: "{{ groups['all'][batch_index | int::batch_size | int] }}"
-  tasks:
-    - name: Gather facts
-      setup:
-      delegate_facts: True
-      delegate_to: "{{ item }}"
-      with_items: "{{ delegate_hosts }}"
-      # We gathered facts for all hosts in the batch during the first play.
-      when: item not in ansible_play_batch
-  tags: always
+# # 在检测到使用了 --limit 参数时执行，从而确保不会重复收集事实，并通过委托的方式收集其他主机的事实。
+# - name: Gather facts for all hosts (if using --limit)
+#   hosts: all_using_limit_True
+#   serial: '{{ ansible_serial|default("0") }}'
+#   gather_facts: false
+#   vars:
+#     batch_index: "{{ ansible_play_batch.index(inventory_hostname) }}"
+#     batch_size: "{{ ansible_play_batch | length }}"
+#     delegate_hosts: "{{ groups['all'][batch_index | int::batch_size | int] }}"
+#   tasks:
+#     - name: Gather facts
+#       setup:
+#       delegate_facts: True
+#       delegate_to: "{{ item }}"
+#       with_items: "{{ delegate_hosts }}"
+#       # We gathered facts for all hosts in the batch during the first play.
+#       when: item not in ansible_play_batch
+#   tags: always
 
-# 动态地将主机分组。这种方法可以帮助在后续的 playbook 中方便地针对特定的主机组进行操作或配置
-- name: Group hosts based on configuration
-  hosts: all
-  gather_facts: false
-  tasks:
-    # 创建一个新的主机组。每个主机将被添加到名为 release_<version_release> 的组中
-    - name: Group hosts based on release
-      group_by:
-        key: "release_{{ version_release }}"
-    # 根据变量 _action 创建一个新的组。所有主机将被分到 action_<action> 的组中
-    - name: Group hosts based on Kolla action
-      group_by:
-        key: "action_{{ _action }}"
+# # 动态地将主机分组。这种方法可以帮助在后续的 playbook 中方便地针对特定的主机组进行操作或配置
+# - name: Group hosts based on configuration
+#   hosts: all
+#   gather_facts: false
+#   tasks:
+#     # 创建一个新的主机组。每个主机将被添加到名为 release_<version_release> 的组中
+#     - name: Group hosts based on release
+#       group_by:
+#         key: "release_{{ version_release }}"
+#     # 根据变量 _action 创建一个新的组。所有主机将被分到 action_<action> 的组中
+#     - name: Group hosts based on Kolla action
+#       group_by:
+#         key: "action_{{ _action }}"
 
-    # 如果 enable_httpd 为 True，则该主机会被分到 enable_httpd_True 组；
-    # 如果为 False，则会被分到 enable_httpd_False 组。
-    - name: Group hosts based on enabled services
-      group_by:
-        key: "{{ item }}"
-      with_items:
-        - enable_httpd_{{ enable_httpd }}
-  tags: always
+#     # 如果 enable_httpd 为 True，则该主机会被分到 enable_httpd_True 组；
+#     # 如果为 False，则会被分到 enable_httpd_False 组。
+#     - name: Group hosts based on enabled services
+#       group_by:
+#         key: "{{ item }}"
+#       with_items:
+#         - enable_httpd_{{ enable_httpd | bool }}
+#   tags: always
