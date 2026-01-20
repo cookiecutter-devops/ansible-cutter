@@ -1,7 +1,5 @@
 ---
-- import_playbook: gather-facts.yml
-
-
+# - import_playbook: gather-facts.yml
 
 - name: Apply role httpd
   gather_facts: false
