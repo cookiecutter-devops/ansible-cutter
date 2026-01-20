@@ -1,0 +1,12 @@
+---
+# 模拟启动服务和服务检查
+- name: start httpd
+  systemd:
+    name: httpd
+    state: started
+
+- name: check httpd is running
+  shell: |
+    systemctl is-active httpd
+  register: httpd_status
+  failed_when: httpd_status.stdout != 'active'

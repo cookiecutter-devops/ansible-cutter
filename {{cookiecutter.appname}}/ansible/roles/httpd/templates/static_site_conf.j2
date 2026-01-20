@@ -1,0 +1,12 @@
+<VirtualHost *:{{ web_port }}>
+  ServerName {{ domain_or_ip }}
+  DocumentRoot {{ www_web_dir }}
+
+  <Directory {{ www_web_dir }}>
+      AllowOverride None
+      Require all granted
+  </Directory>
+
+  ErrorLog {{www_web_log_dir}}/my_static_site_error.log
+  CustomLog {{www_web_log_dir}}/my_static_site_access.log combined
+</VirtualHost>

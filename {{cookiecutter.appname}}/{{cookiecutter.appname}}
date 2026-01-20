@@ -1,5 +1,4 @@
 #!/bin/bash
-
 function error_exit {
     echo "\$1" 1>&2
     exit 1
@@ -19,13 +18,13 @@ Options:
     -p <playbook>           运行指定的 playbook 文件，而不是默认文件
     -c <configdir>          使用指定的配置目录（也可以通过 BOSI_CFG 环境变量指定）
     -n                      模拟运行 - 不做任何更改
-    -E                      回显命令 - 不实际运行它们
-    -j                      并发执行命令
+    -E                      回显命令 - 不实际运行
 
 Commands:
 
     requirements            安装依赖
-    config                  运行 Ansible
+    deploy                  执行 _action 部署步骤
+    conifg                  执行 _action 配置步骤
     env                     打印当前配置的环境（库存/环境变量）
     ping                    对所有主机执行 Ansible ping(不是 ICMP ping)
     exec                    在指定的 Ansible 主机组上执行任意命令
@@ -46,6 +45,7 @@ cat <<EOF
 -h
 -v
 requirements
+deploy
 config
 ssh
 ping
@@ -61,18 +61,18 @@ EOF
 function choose_config {
   # 如果没有指定 configdir，则尝试自动选择或提示用户选择
   if [ -z "$configdir" ]; then
-    if [ ! -f .config ]; then
+    if [ ! -f ~/.ansible_config ]; then
       echo "Please specify config dir:"
-      # 获取所有包含 inventory.txt 的配置目录
-      configdirs=($(ls configs/*/inventory.txt | xargs -L1 dirname))
+      # 获取所有包含 hosts 的配置目录
+      configdirs=($(ls /etc/asb_config/*/hosts | xargs -L1 dirname))
       numdirs=$(echo "$configdirs" | wc -l)
       # 让用户选择配置目录
       select configdir in "${configdirs[@]}" "None of the above"; do
         if [ "$REPLY" -eq "$(($numdirs+1))" ]; then
           echo quit
         elif [ "$REPLY" -le "$numdirs" ]; then
-          # 将选择保存到 .config 文件
-          echo "configdir=$configdir" > .config
+          # 将选择保存到 ~/.ansible_config 文件
+          echo "configdir=$configdir" > ~/.ansible_config
         else
           echo "Bad choice, try again"
           continue
@@ -80,8 +80,8 @@ function choose_config {
         break
       done
     else
-      # 从 .config 文件加载配置
-      source .config
+      # 从 ~/.ansible_config 文件加载配置
+      source ~/.ansible_config
     fi
   fi
 
@@ -89,7 +89,7 @@ function choose_config {
   if [ -f $configdir/env ]; then source $configdir/env; fi
 
   # 设置库存文件路径
-  inventory=$configdir/inventory.txt
+  inventory=$configdir/hosts
   if [ ! -f "$inventory" ]; then
     error_exit "ERROR: $inventory doesn't exist"
   fi
@@ -116,8 +116,11 @@ function _ansible_config {
 function _ssh {
   # 获取 SSH 公共参数
   local ssh_args=$(_ansible_config $1 .ansible_ssh_common_args)
+  if [[ $ssh_args == "null" ]];then
+      ssh_args="$ssh_args -o ControlMaster=auto -o ControlPersist=600"
+  fi
   # 获取 SSH 用户名
-  local ssh_user=$(_ansible_config $1 .ansible_user)
+  local ssh_user=$(_ansible_config $1 .ansible_ssh_user)
   # 获取 SSH 主机名
   local ssh_host=$(_ansible_config $1 .ansible_host)
   # 移除第一个参数（主机名）
@@ -126,25 +129,17 @@ function _ssh {
   ssh $ssh_args $ssh_user@$ssh_host "$@"
 }
 
-# 并发执行功能
-function parallel_exec {
-    local group=\$1
-    shift
-    for host in $(ansible-inventory -i $inventory --list | jq -Mr '._meta.hostvars | .[] | select(has("ansible_host")) | .ansible_host'); do
-        ( ssh -o StrictHostKeyChecking=no "$host" "$@" & )  # 后台执行 SSH
-    done
-    wait  # 等待所有后台进程完成
-}
 
 
 # 初始化变量
+BASEDIR=/usr/share/{{cookiecutter.appname}}
 VERBOSITY=          # Ansible 详细程度标志
-PLAYBOOK=ansible/site.yml  # 默认 playbook 文件路径
+PLAYBOOK=${BASEDIR}/ansible/site.yml  # 默认 playbook 文件路径
 ECHO=               # 命令回显标志，为空表示实际执行命令
 EXTRA_OPTS=         # 传递给 Ansible 命令的额外选项
 
 # 定义短选项
-SHORT_OPTS=":hi:e:p:c:v?nE:j"
+SHORT_OPTS=":hi:e:p:c:v?nEj"
 # The OSX getopt command doesn't support long options
 # 解析命令行选项
 while getopts $SHORT_OPTS optchar; do
@@ -161,6 +156,8 @@ case "${optchar}" in
     *) error_exit "Invalid option: -$OPTARG" ;;
 esac
 done
+
+
 
 # 移除已解析的选项，保留命令和命令参数
 shift $((OPTIND-1))
@@ -179,7 +176,11 @@ case "$ACTION" in
   (clean)
     $ECHO rm -f .config
     ;;
-  # 运行 Ansible 配置
+  # 部署
+  (deploy)
+    $ECHO ansible-playbook -i $inventory $EXTRA_OPTS $VERBOSITY -e _action=$ACTION "$@" $PLAYBOOK
+    ;;
+  # 配置
   (config)
     $ECHO ansible-playbook -i $inventory $EXTRA_OPTS $VERBOSITY -e _action=$ACTION "$@" $PLAYBOOK
     ;;
@@ -189,24 +190,20 @@ case "$ACTION" in
     ;;
   # 执行 ping 命令
   (ping)
-    if [ "$PARALLEL" = true ]; then
-        parallel_exec ping
-    else
-        $ECHO ansible-playbook -i $inventory $EXTRA_OPTS -e bosi_action=$ACTION $VERBOSITY "$@" ansible/ping.yml
-    fi
+    $ECHO ansible-playbook -i $inventory $EXTRA_OPTS -e bosi_action=$ACTION $VERBOSITY "$@" ${BASEDIR}/ansible/ping.yml
     ;;
   # 在主机组上执行命令
   (exec)
     ANSIBLE_GROUP=$1  # 获取主机组
     shift
-    if [ "$PARALLEL" = true ]; then
-        parallel_exec "$ANSIBLE_GROUP" "$@"
-    else
-        $ECHO ansible -i $inventory "$ANSIBLE_GROUP" -m shell -a "$@"
-    fi
+    $ECHO ansible -i $inventory "$ANSIBLE_GROUP" -m shell -a "$@"
     ;;
   # SSH 到主机
   (ssh)
+    if [ -z "$1" ]; then
+        echo "ERROR: No host specified"
+        exit 1
+    fi
     _ssh "$@"
     ;;
   # 列出库存中的主机
@@ -216,7 +213,7 @@ case "$ACTION" in
   # 重新扫描 SSH 主机密钥
   (rescan)
     # 获取所有主机名
-    HOSTS=$(ansible-inventory -i $inventory --list | jq -Mr '._meta.hostvars | .[] | select(has("ansible_host")) | .ansible_host')
+    HOSTS=$(ansible-inventory -i $inventory --list | jq -Mr '._meta.hostvars | to_entries[] | select(.value.ansible_host != null) | .value.ansible_host')
     for h in $HOSTS; do
       # 移除旧的主机密钥
       ssh-keygen -R $h

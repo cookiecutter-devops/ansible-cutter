@@ -1,0 +1,25 @@
+---
+###################
+# deploy options
+###################
+
+# 版本信息
+version_release: "2.0.0"
+
+# 安装目录
+software_dir: "/root/binary_pkg"
+www_web_dir: "/var/www/static_site"
+www_web_log_dir: "/var/log/httpd"
+k8s_work_dir: "/opt/kubernetes"
+etcd_work_dir: "/opt/etcd"
+tmp_dir: "/tmp/k8s"
+web_port: 80
+domain_or_ip: www.hujianli.com
+
+# Ansible debug level for printing some built-in debug information
+debug_level: 0
+
+###################
+# enable options
+###################
+enable_httpd: "yes"
