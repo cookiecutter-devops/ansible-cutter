@@ -22,4 +22,4 @@ debug_level: 0
 ###################
 # enable options
 ###################
-enable_httpd: true
+enable_httpd: "true"

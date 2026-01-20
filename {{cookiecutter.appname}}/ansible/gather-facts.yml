@@ -54,5 +54,5 @@
       group_by:
         key: "{{ item }}"
       with_items:
-        - enable_httpd_{{ enable_httpd | bool }}
+        - enable_httpd_{{ enable_httpd }}
   tags: always
