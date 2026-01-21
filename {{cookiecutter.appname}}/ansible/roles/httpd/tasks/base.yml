@@ -18,16 +18,13 @@
 #     regexp: "UUID.*swap"
 #     line: ""
 
-
-
 - name: 即时生效
   shell: setenforce 0 ; swapoff -a
-
 # - name: 拷贝时区
 #   copy: src=/usr/share/zoneinfo/Asia/Shanghai dest=/etc/localtime
 
-- name: 添加hosts
-  template: src=hosts.j2 dest=/etc/hosts_test
+# - name: 添加hosts
+#   template: src=hosts.j2 dest=/etc/hosts_test
 # - name: 同步系统时间
 #   yum: name=ntpdate state=present
 

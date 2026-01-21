@@ -18,10 +18,15 @@
 ```sh
 # 初始化
 cd {{cookiecutter.appname}}
-mkdir -p /usr/share/{{cookiecutter.appname}} && cp -rf ./* /usr/share/{{cookiecutter.appname}}
-cp -rf /usr/share/{{cookiecutter.appname}}/{{cookiecutter.appname}} /usr/bin/
-cp -rf /usr/share/{{cookiecutter.appname}}/configs /etc/asb_config
-cp -rf /usr/share/{{cookiecutter.appname}}/ansible.cfg /etc/ansible/
+pip install -r requirements.txt
+
+# pip install .
+# 或者
+python setup.py install
+
+# 拷贝配置文件
+cp -rf /usr/share/{{cookiecutter.appname}}/etc_examples/{{cookiecutter.appname}}/ /etc/{{cookiecutter.appname}}/
+
 
 # 显示帮助信息
 {{cookiecutter.appname}} help

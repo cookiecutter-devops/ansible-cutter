@@ -64,7 +64,7 @@ function choose_config {
     if [ ! -f ~/.ansible_config ]; then
       echo "Please specify config dir:"
       # 获取所有包含 hosts 的配置目录
-      configdirs=($(ls /etc/asb_config/*/hosts | xargs -L1 dirname))
+      configdirs=($(ls /etc/{{cookiecutter.appname}}/*/hosts | xargs -L1 dirname))
       numdirs=$(echo "$configdirs" | wc -l)
       # 让用户选择配置目录
       select configdir in "${configdirs[@]}" "None of the above"; do

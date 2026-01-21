@@ -1,25 +1,26 @@
 ---
-# - import_playbook: gather-facts.yml
+- import_playbook: gather-facts.yml
+
+
 
 - name: Apply role httpd
   gather_facts: false
   any_errors_fatal: true
   hosts:
     - docker
-    # - '&enable_httpd_True'
-  serial: '{{ ansible_serial|default("0") }}'
+    - '&enable_httpd_True'
+  serial: "{{'{{ ansible_serial|default(\"0\") }}'}}"
   roles:
-    - { role: httpd,
-        tags: httpd,
-        when: enable_httpd | bool }
+    - role: httpd
+      tags: httpd
+      when: enable_httpd | bool
 
 
 - name: Apply role {{cookiecutter.rolename}}
   gather_facts: false
   any_errors_fatal: true
-  hosts:
-    - all
-  serial: '{{ ansible_serial|default("0") }}'
+  hosts: all
+  serial: "{{'{{ ansible_serial|default(\"0\") }}'}}"
   roles:
-    - { role: {{cookiecutter.rolename}},
-        tags: {{cookiecutter.rolename}} }
+    - role: {{cookiecutter.rolename}}
+      tags: {{cookiecutter.rolename}}
