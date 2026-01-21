@@ -1,1 +1,24 @@
-{}
+# configs/default/extra-vars.yml
+
+# 启用或禁用 HTTPD 服务
+enable_httpd: true
+
+# 定义要部署的应用程序版本
+app_version: "1.0.0"
+
+# 数据库配置
+db_host: "localhost"
+db_port: 5432
+db_user: "admin"
+db_password: "securepassword"
+db_name: "my_database"
+
+# 服务器配置
+server_name: "my-server"
+server_ip: "192.168.1.100"
+
+# 其他自定义变量
+custom_variable: "This is a custom variable"
+
+# 可以根据环境设置不同的值
+environment: "production" # 可选值: production, staging, development
