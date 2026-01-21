@@ -1,8 +1,5 @@
 #!/bin/bash
-function error_exit {
-    echo "\$1" 1>&2
-    exit 1
-}
+
 
 # 显示脚本用法帮助信息
 function usage {
@@ -59,6 +56,11 @@ EOF
 
 # 选择和加载配置目录
 function choose_config {
+  # 检查是否通过 -i 指定了库存文件
+  if [ -n "$INVENTORY" ]; then
+    inventory="$INVENTORY"
+  fi
+
   # 如果没有指定 configdir，则尝试自动选择或提示用户选择
   if [ -z "$configdir" ]; then
     if [ ! -f ~/.ansible_config ]; then
@@ -85,14 +87,18 @@ function choose_config {
     fi
   fi
 
+  # 仅在未通过 -i 指定库存文件时设置 inventory
+  if [ -z "$inventory" ]; then
+    inventory="$configdir/hosts"
+  fi
+
+  # 检查库存文件是否存在
+  if [ ! -f "$inventory" ]; then
+    echo "ERROR: $inventory doesn't exist" >&2; exit 1
+  fi
+
   # 如果存在环境文件，加载它
   if [ -f $configdir/env ]; then source $configdir/env; fi
-
-  # 设置库存文件路径
-  inventory=$configdir/hosts
-  if [ ! -f "$inventory" ]; then
-    error_exit "ERROR: $inventory doesn't exist"
-  fi
 
   # 加载所有 JSON 和 YAML 变量文件
   for f in $configdir/*.json $configdir/*.yml; do
@@ -130,7 +136,6 @@ function _ssh {
 }
 
 
-
 # 初始化变量
 BASEDIR=/usr/share/{{cookiecutter.appname}}
 VERBOSITY=          # Ansible 详细程度标志
@@ -152,8 +157,7 @@ case "${optchar}" in
     v) VERBOSITY="$VERBOSITY --verbose"; set -x ;;
     n) EXTRA_OPTS="$EXTRA_OPTS --check" ;;
     E) ECHO=echo ;;
-    j) PARALLEL=true ;;  # 启用并发执行
-    *) error_exit "Invalid option: -$OPTARG" ;;
+    *) echo "Invalid option: -$OPTARG" >&2; exit 1 ;;
 esac
 done
 

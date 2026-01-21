@@ -22,3 +22,8 @@ You can easily add this to your `~/.cookiecutterrc` something like this:
 Then you can run the following command to create a new ansible project:
 
     cookiecutter ansible
+
+
+```sh
+cookiecutter https://github.com/cookiecutter-devops/ansible-cutter.git
+```

@@ -39,10 +39,13 @@ cp -rf /usr/share/{{cookiecutter.appname}}/etc_examples/{{cookiecutter.appname}}
 
 # 回显命令 - 不实际运行
 {{cookiecutter.appname}} -E deploy
-# ansible-playbook -i configs/default/hosts -e @configs/default/extra-vars.yml -e _action=deploy ansible/site.yml
+# ansible-playbook -i /etc/kolla_k8s/default/hosts -e @/etc/kolla_k8s/default/extra-vars.yml -e _action=deploy /usr/share/kolla_k8s/ansible/site.yml
 
 # 模拟运行配置命令，不实际更改任何内容：
 {{cookiecutter.appname}} -n deploy
+
+# 使用 -i 指定 inventory 文件：
+{{cookiecutter.appname}} -E -i /etc/kolla_k8s/my_inventory.yml deploy
 
 # 安装 Ansible 角色和依赖项：
 {{cookiecutter.appname}} requirements
@@ -69,10 +72,9 @@ cp -rf /usr/share/{{cookiecutter.appname}}/etc_examples/{{cookiecutter.appname}}
 {{cookiecutter.appname}} exec all "uptime"
 #使用 Ansible 库存中的凭证 SSH 到 web01 主机：
 {{cookiecutter.appname}} ssh server1
-
-
 # SSH 到主机并执行命令：
-{{cookiecutter.appname}} ssh web01 "ls -la /var/www"
+{{cookiecutter.appname}} ssh server1 "ls -la /etc/ssh"
+
 
 # 将所有主机的 SSH 密钥重新扫描到 known_hosts 文件：
 {{cookiecutter.appname}} rescan
@@ -81,6 +83,8 @@ cp -rf /usr/share/{{cookiecutter.appname}}/etc_examples/{{cookiecutter.appname}}
 {{cookiecutter.appname}} env
 
 
+# 列出所有的主机
+{{cookiecutter.appname}} list
 
 # 删除保存的配置文件：
 {{cookiecutter.appname}} clean
@@ -101,5 +105,5 @@ cp -rf /usr/share/{{cookiecutter.appname}}/etc_examples/{{cookiecutter.appname}}
 {{cookiecutter.appname}} -v -n -c configs/staging config
 
 # 在多个主机上执行复杂命令
-{{cookiecutter.appname}} exec docker "sudo systemctl restart httpd && sudo systemctl status httpd"
+{{cookiecutter.appname}} exec docker "ps aux |grep sshd"
 ```
