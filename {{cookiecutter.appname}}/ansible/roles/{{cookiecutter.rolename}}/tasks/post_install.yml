@@ -1,0 +1,7 @@
+---
+- name: post_install tasks
+  debug:
+    msg: "This is a post_install task"
+
+- name: post_install tasks
+  shell: echo "This is a post_install task"

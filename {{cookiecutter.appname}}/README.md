@@ -64,7 +64,11 @@ cp -rf /usr/share/{{cookiecutter.appname}}/etc_examples/{{cookiecutter.appname}}
 
 # 使用 Ansible ping 模块检查所有主机的连通性：
 {{cookiecutter.appname}} -E ping
-{{cookiecutter.appname}} ping
+# 或者只检查 docker 组的主机：
+{{cookiecutter.appname}} ping docker
+# 或者只检查 server1 主机：
+{{cookiecutter.appname}} ping server1
+
 
 
 # 在 webservers 组上执行 df -h 命令：

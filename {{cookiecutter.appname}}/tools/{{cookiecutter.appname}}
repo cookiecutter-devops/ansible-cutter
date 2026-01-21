@@ -63,7 +63,7 @@ function choose_config {
 
   # 如果没有指定 configdir，则尝试自动选择或提示用户选择
   if [ -z "$configdir" ]; then
-    if [ ! -f ~/.ansible_config ]; then
+    if [ ! -f ~/.{{cookiecutter.appname}} ]; then
       echo "Please specify config dir:"
       # 获取所有包含 hosts 的配置目录
       configdirs=($(ls /etc/{{cookiecutter.appname}}/*/hosts | xargs -L1 dirname))
@@ -73,8 +73,8 @@ function choose_config {
         if [ "$REPLY" -eq "$(($numdirs+1))" ]; then
           echo quit
         elif [ "$REPLY" -le "$numdirs" ]; then
-          # 将选择保存到 ~/.ansible_config 文件
-          echo "configdir=$configdir" > ~/.ansible_config
+          # 将选择保存到 ~/.{{cookiecutter.appname}} 文件
+          echo "configdir=$configdir" > ~/.{{cookiecutter.appname}}
         else
           echo "Bad choice, try again"
           continue
@@ -83,7 +83,8 @@ function choose_config {
       done
     else
       # 从 ~/.ansible_config 文件加载配置
-      source ~/.ansible_config
+      source ~/.{{cookiecutter.appname}}
+      configdir=$configdir
     fi
   fi
 

@@ -1,0 +1,7 @@
+---
+- name: install tasks
+  debug:
+    msg: "This is an install task"
+
+- name: install tasks
+  shell: echo "This is an install task"

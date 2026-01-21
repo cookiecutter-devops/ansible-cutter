@@ -1,0 +1,15 @@
+- name: config_task
+  debug:
+    msg: "This is a config_task task"
+
+- name: config_task shell command
+  shell: echo "This is a config_task task"
+  notify:
+    - do some stuff
+
+- name: config_task template
+  template:
+    src: templ.j2
+    dest: /tmp/file
+  vars: {}
+  when: false

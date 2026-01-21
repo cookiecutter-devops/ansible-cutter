@@ -1,0 +1,6 @@
+include README.md
+recursive-include ansible *
+recursive-include etc *
+recursive-include contrib *
+recursive-include tools *
+recursive-include tests *
