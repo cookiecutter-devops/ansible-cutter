@@ -4,7 +4,7 @@
 # 收集所有主机的事实，并创建一个新的组来标识是否使用了 --limit 参数。
 - name: Gather facts for all hosts
   hosts: all
-  serial: "{{'{{ ansible_serial|default(\"0\") }}'}}"
+  serial: "{{'{{ ansible_serial|default(\'0\') }}'}}"
   gather_facts: false
   tasks:
     - name: Gather facts
@@ -18,12 +18,12 @@
 # 在检测到使用了 --limit 参数时执行，从而确保不会重复收集事实，并通过委托的方式收集其他主机的事实。
 - name: Gather facts for all hosts (if using --limit)
   hosts: all_using_limit_True
-  serial: "{{'{{ ansible_serial|default(\"0\") }}'}}"
+  serial: "{{'{{ ansible_serial|default(\'0\') }}'}}"
   gather_facts: false
   vars:
     batch_index: "{{'{{ ansible_play_batch.index(inventory_hostname) }}'}}"
     batch_size: "{{'{{ ansible_play_batch | length }}'}}"
-    delegate_hosts: "{{'{{ groups[\"all\"][batch_index | int::batch_size | int] }}'}}"
+    delegate_hosts: "{{'{{ groups[\'all\'][batch_index | int::batch_size | int] }}'}}"
   tasks:
     - name: Gather facts
       setup:

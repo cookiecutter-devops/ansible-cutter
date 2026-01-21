@@ -9,7 +9,7 @@
   hosts:
     - docker
     - '&enable_httpd_True'
-  serial: "{{'{{ ansible_serial|default(\"0\") }}'}}"
+  serial: "{{'{{ ansible_serial|default(\'0\') }}'}}"
   roles:
     - role: httpd
       tags: httpd
@@ -20,7 +20,7 @@
   gather_facts: false
   any_errors_fatal: true
   hosts: all
-  serial: "{{'{{ ansible_serial|default(\"0\") }}'}}"
+  serial: "{{'{{ ansible_serial|default(\'0\') }}'}}"
   roles:
     - role: {{cookiecutter.rolename}}
       tags: {{cookiecutter.rolename}}
