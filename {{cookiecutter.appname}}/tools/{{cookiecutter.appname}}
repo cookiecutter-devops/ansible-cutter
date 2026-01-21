@@ -23,7 +23,7 @@ Commands:
     deploy                  执行 _action 部署步骤
     conifg                  执行 _action 配置步骤
     env                     打印当前配置的环境（库存/环境变量）
-    ping                    对所有主机执行 Ansible ping(不是 ICMP ping)
+    ping [pattern]          对指定主机/组执行 Ansible ping(不是 ICMP ping)，默认为 all
     exec                    在指定的 Ansible 主机组上执行任意命令
     ssh                     使用 Ansible 库存凭证/连接 SSH 到主机（需要 Ansible 2.4 或更高版本）
     list                    列出库存中的主机（需要 Ansible 2.4 或更高版本）
@@ -54,6 +54,7 @@ help
 EOF
 }
 
+
 # 选择和加载配置目录
 function choose_config {
   # 检查是否通过 -i 指定了库存文件
@@ -63,7 +64,7 @@ function choose_config {
 
   # 如果没有指定 configdir，则尝试自动选择或提示用户选择
   if [ -z "$configdir" ]; then
-    if [ ! -f ~/.{{cookiecutter.appname}} ]; then
+    if [ ! -f ~/{{cookiecutter.appname}} ]; then
       echo "Please specify config dir:"
       # 获取所有包含 hosts 的配置目录
       configdirs=($(ls /etc/{{cookiecutter.appname}}/*/hosts | xargs -L1 dirname))
@@ -73,8 +74,8 @@ function choose_config {
         if [ "$REPLY" -eq "$(($numdirs+1))" ]; then
           echo quit
         elif [ "$REPLY" -le "$numdirs" ]; then
-          # 将选择保存到 ~/.{{cookiecutter.appname}} 文件
-          echo "configdir=$configdir" > ~/.{{cookiecutter.appname}}
+          # 将选择保存到 ~/{{cookiecutter.appname}} 文件
+          echo "configdir=$configdir" > ~/{{cookiecutter.appname}}
         else
           echo "Bad choice, try again"
           continue
@@ -82,9 +83,8 @@ function choose_config {
         break
       done
     else
-      # 从 ~/.ansible_config 文件加载配置
-      source ~/.{{cookiecutter.appname}}
-      configdir=$configdir
+      # 从 ~/{{cookiecutter.appname}} 文件加载配置
+      source ~/{{cookiecutter.appname}}
     fi
   fi
 
@@ -195,7 +195,9 @@ case "$ACTION" in
     ;;
   # 执行 ping 命令
   (ping)
-    $ECHO ansible-playbook -i $inventory $EXTRA_OPTS -e bosi_action=$ACTION $VERBOSITY "$@" ${BASEDIR}/ansible/ping.yml
+    PING_TARGET="${1:-all}"  # 获取目标分组或主机，默认为 all
+    shift
+    $ECHO ansible -i $inventory $PING_TARGET -m ping $VERBOSITY "$@"
     ;;
   # 在主机组上执行命令
   (exec)
