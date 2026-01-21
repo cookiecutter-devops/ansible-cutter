@@ -23,7 +23,7 @@
   vars:
     batch_index: "{{'{{ ansible_play_batch.index(inventory_hostname) }}'}}"
     batch_size: "{{'{{ ansible_play_batch | length }}'}}"
-    delegate_hosts: "{{'{{ groups['all'][batch_index | int::batch_size | int] }}'}}"
+    delegate_hosts: "{{'{{ groups[\"all\"][batch_index | int::batch_size | int] }}'}}"
   tasks:
     - name: Gather facts
       setup:
