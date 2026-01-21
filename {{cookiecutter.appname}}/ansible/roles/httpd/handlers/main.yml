@@ -1,2 +1,0 @@
-- name: restart httpd
-  command: 'systemctl restart httpd'

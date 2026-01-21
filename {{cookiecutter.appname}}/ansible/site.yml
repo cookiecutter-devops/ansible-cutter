@@ -3,17 +3,17 @@
 
 
 
-- name: Apply role httpd
-  gather_facts: false
-  any_errors_fatal: true
-  hosts:
-    - docker
-    - '&enable_httpd_True'
-  serial: "{{'{{ ansible_serial|default(\'0\') }}'}}"
-  roles:
-    - role: httpd
-      tags: httpd
-      when: enable_httpd | bool
+# - name: Apply role httpd
+#   gather_facts: false
+#   any_errors_fatal: true
+#   hosts:
+#     - docker
+#     - '&enable_httpd_True'
+#   serial: "{{'{{ ansible_serial|default(\'0\') }}'}}"
+#   roles:
+#     - role: httpd
+#       tags: httpd
+#       when: enable_httpd | bool
 
 
 - name: Apply role {{cookiecutter.rolename}}
