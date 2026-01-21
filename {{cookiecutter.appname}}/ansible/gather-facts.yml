@@ -12,7 +12,7 @@
 
     - name: Group hosts to determine when using --limit
       group_by:
-        key: all_using_limit_"{{'{{ (ansible_play_batch | length) != (groups[\"all\"] | length) }}'}}"
+        key: all_using_limit_"{{'{{ (ansible_play_batch | length) != (groups[\'all\'] | length) }}'}}"
   tags: always
 
 # 在检测到使用了 --limit 参数时执行，从而确保不会重复收集事实，并通过委托的方式收集其他主机的事实。

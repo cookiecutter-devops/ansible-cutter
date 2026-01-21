@@ -20,6 +20,10 @@
 cd {{cookiecutter.appname}}
 pip install -r requirements.txt
 
+git init .
+git commit -m "init project"
+git tag -a v0.1.0 -m "initial release"
+
 # pip install .
 # 或者
 python setup.py install
