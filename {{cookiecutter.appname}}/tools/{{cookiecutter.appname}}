@@ -16,6 +16,7 @@ Options:
     -c <configdir>          使用指定的配置目录（也可以通过 BOSI_CFG 环境变量指定）
     -n                      模拟运行 - 不做任何更改
     -E                      回显命令 - 不实际运行
+    -t <tags>               只运行带有指定标签的任务
 
 Commands:
 
@@ -41,6 +42,7 @@ cat <<EOF
 -e
 -h
 -v
+-t
 requirements
 deploy
 config
@@ -136,6 +138,32 @@ function _ssh {
   ssh $ssh_args $ssh_user@$ssh_host "$@"
 }
 
+# 检查 Ansible 和必要工具是否可用
+function check_prerequisites {
+    local missing_tools=()
+
+    if ! command -v ansible >/dev/null 2>&1; then
+        missing_tools+=("ansible")
+    fi
+
+    if ! command -v ansible-playbook >/dev/null 2>&1; then
+        missing_tools+=("ansible-playbook")
+    fi
+
+    if ! command -v jq >/dev/null 2>&1; then
+        missing_tools+=("jq")
+    fi
+
+    if [ ${#missing_tools[@]} -ne 0 ]; then
+        echo "ERROR: Missing required tools: ${missing_tools[*]}"
+        echo "Please install them first."
+        exit 1
+    fi
+}
+
+
+# 初始化变量
+check_prerequisites
 
 # 初始化变量
 BASEDIR=/usr/share/{{cookiecutter.appname}}
@@ -143,9 +171,10 @@ VERBOSITY=          # Ansible 详细程度标志
 PLAYBOOK=${BASEDIR}/ansible/site.yml  # 默认 playbook 文件路径
 ECHO=               # 命令回显标志，为空表示实际执行命令
 EXTRA_OPTS=         # 传递给 Ansible 命令的额外选项
+TAGS=               # 要运行的标签
 
 # 定义短选项
-SHORT_OPTS=":hi:e:p:c:v?nEj"
+SHORT_OPTS=":hi:e:p:c:v?nEt:"
 # The OSX getopt command doesn't support long options
 # 解析命令行选项
 while getopts $SHORT_OPTS optchar; do
@@ -157,6 +186,7 @@ case "${optchar}" in
     p) PLAYBOOK=$OPTARG ;;
     v) VERBOSITY="$VERBOSITY --verbose"; set -x ;;
     n) EXTRA_OPTS="$EXTRA_OPTS --check" ;;
+    t) TAGS="--tags $OPTARG" ;;
     E) ECHO=echo ;;
     *) echo "Invalid option: -$OPTARG" >&2; exit 1 ;;
 esac
@@ -179,15 +209,15 @@ shift
 case "$ACTION" in
   # 清理配置文件
   (clean)
-    $ECHO rm -f .config
+    $ECHO rm -f ~/{{cookiecutter.appname}}
     ;;
   # 部署
   (deploy)
-    $ECHO ansible-playbook -i $inventory $EXTRA_OPTS $VERBOSITY -e _action=$ACTION "$@" $PLAYBOOK
+    $ECHO ansible-playbook -i $inventory $EXTRA_OPTS $VERBOSITY $TAGS -e _action=$ACTION "$@" $PLAYBOOK
     ;;
   # 配置
   (config)
-    $ECHO ansible-playbook -i $inventory $EXTRA_OPTS $VERBOSITY -e _action=$ACTION "$@" $PLAYBOOK
+    $ECHO ansible-playbook -i $inventory $EXTRA_OPTS $VERBOSITY $TAGS -e _action=$ACTION "$@" $PLAYBOOK
     ;;
   # 安装依赖
   (requirements)
