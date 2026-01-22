@@ -23,6 +23,7 @@ Commands:
     requirements            安装依赖
     deploy                  执行 _action 部署步骤
     conifg                  执行 _action 配置步骤
+    remove                  执行 _action 移除步骤
     env                     打印当前配置的环境（库存/环境变量）
     ping [pattern]          对指定主机/组执行 Ansible ping(不是 ICMP ping)，默认为 all
     exec                    在指定的 Ansible 主机组上执行任意命令
@@ -46,6 +47,7 @@ cat <<EOF
 requirements
 deploy
 config
+remove
 ssh
 ping
 exec
@@ -154,7 +156,7 @@ function check_prerequisites {
         missing_tools+=("jq")
     fi
 
-    if [ ${#missing_tools[@]} -ne 0 ]; then
+    if [ {{'${#missing_tools[@]}'}} -ne 0 ]; then
         echo "ERROR: Missing required tools: ${missing_tools[*]}"
         echo "Please install them first."
         exit 1
@@ -217,6 +219,10 @@ case "$ACTION" in
     ;;
   # 配置
   (config)
+    $ECHO ansible-playbook -i $inventory $EXTRA_OPTS $VERBOSITY $TAGS -e _action=$ACTION "$@" $PLAYBOOK
+    ;;
+  # 移除
+  (remove)
     $ECHO ansible-playbook -i $inventory $EXTRA_OPTS $VERBOSITY $TAGS -e _action=$ACTION "$@" $PLAYBOOK
     ;;
   # 安装依赖
