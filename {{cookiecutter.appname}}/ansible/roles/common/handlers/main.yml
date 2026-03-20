@@ -1,3 +1,0 @@
-- name: do some stuff
-  command: 'echo foo'
-  when: awesome|default(False) == True

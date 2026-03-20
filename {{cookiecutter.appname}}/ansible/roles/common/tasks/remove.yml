@@ -1,7 +1,0 @@
----
-- name: uninstall tasks
-  debug:
-    msg: "This is an uninstall task"
-
-- name: uninstall tasks
-  shell: echo "This is an uninstall task"
