@@ -15,7 +15,7 @@
     - chrony-server
     - chrony
     - "&enable_chrony_True"
-  serial: '{{ kolla_serial|default("0") }}'
+  serial: "{{'{{ ansible_serial|default(\'0\') }}'}}"
   roles:
     - role: chrony
       tags: chrony
