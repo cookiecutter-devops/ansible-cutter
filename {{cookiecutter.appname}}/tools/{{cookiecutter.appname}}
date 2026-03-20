@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# 需要安装 ansible jq 工具
 set -e
 VERSION="2.0.0"
 
@@ -124,31 +124,6 @@ function _ssh {
         ssh $ssh_args -p $ssh_port $ssh_user@$ssh_host "$@"
     fi
 }
-
-# 检查依赖的内部函数
-function check_prerequisites {
-    local missing_tools=()
-
-    if ! command -v ansible >/dev/null 2>&1; then
-        missing_tools+=("ansible")
-    fi
-
-    if ! command -v ansible-playbook >/dev/null 2>&1; then
-        missing_tools+=("ansible-playbook")
-    fi
-
-    if ! command -v jq >/dev/null 2>&1; then
-        missing_tools+=("jq")
-    fi
-
-    if [ ${#missing_tools[@]} -ne 0 ]; then
-        echo "ERROR: Missing required tools: ${missing_tools[*]}"
-        echo "Please install them first."
-        exit 1
-    fi
-}
-
-check_prerequisites
 
 BASEDIR=${{{cookiecutter.appname}}_DIR:-/usr/share/{{cookiecutter.appname}}}
 CONFIG_DIR=${{{cookiecutter.appname}}_CONFIG_DIR:-/etc/{{cookiecutter.appname}}}
