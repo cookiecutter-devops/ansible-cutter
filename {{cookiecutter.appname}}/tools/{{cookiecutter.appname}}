@@ -126,7 +126,7 @@ function _ssh {
 }
 
 BASEDIR=/usr/share/{{cookiecutter.appname}}
-CONFIG_DIR=/etc/{{cookiecutter.appname}}}
+CONFIG_DIR=/etc/{{cookiecutter.appname}}
 VERBOSITY=
 PLAYBOOK=${BASEDIR}/ansible/site.yml
 ECHO=
