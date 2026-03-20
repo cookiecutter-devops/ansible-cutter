@@ -1,0 +1,4 @@
+export KOLLA_db_name=kolla
+export KOLLA_db_password=kolla
+export OS_PASSWORD=kolla
+export CONFIG_kolla_k8s_password=kolla

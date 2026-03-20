@@ -3,10 +3,8 @@
 # deploy options
 ###################
 
-# 版本信息
 version_release: "2.0.0"
 
-# 安装目录
 software_dir: "/root/binary_pkg"
 www_web_dir: "/var/www/static_site"
 www_web_log_dir: "/var/log/httpd"
@@ -16,10 +14,44 @@ tmp_dir: "/tmp/k8s"
 web_port: 80
 domain_or_ip: www.hujianli.com
 
-# Ansible debug level for printing some built-in debug information
 debug_level: 0
 
 ###################
 # enable options
 ###################
 enable_httpd: "yes"
+enable_chrony: true
+
+###################
+# chrony options
+###################
+chrony_server:
+  - 0.pool.ntp.org
+  - 1.pool.ntp.org
+  - 2.pool.ntp.org
+
+chrony_server_mode: false
+
+chrony_pool: []
+
+chrony_allow:
+  - 192.168.0.0/16
+  - 10.0.0.0/8
+
+chrony_driftfile: /var/lib/chrony/drift
+chrony_logdir: /var/log/chrony
+chrony_enable_kernel_sync: true
+
+###################
+# prechecks options
+###################
+prechecks_supported_os:
+  - RedHat
+  - CentOS
+  - Debian
+  - Ubuntu
+  - Rocky
+  - AlmaLinux
+  - Fedora
+
+prechecks_docker_min_version: "20.10"

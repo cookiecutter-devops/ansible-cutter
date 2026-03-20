@@ -1,0 +1,7 @@
+---
+- name: pre_install tasks
+  debug:
+    msg: "This is a pre_install task"
+
+- name: pre_install tasks
+  shell: echo "This is a pre_install task"

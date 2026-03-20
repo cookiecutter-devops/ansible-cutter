@@ -1,0 +1,30 @@
+---
+- name: Install chrony
+  package:
+    name: chrony
+    state: present
+  become: true
+
+- name: Configure chrony
+  template:
+    src: chrony.conf.j2
+    dest: "{{ chrony_config_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  become: true
+  notify: Restart chrony
+
+- name: Ensure chrony is running and enabled
+  service:
+    name: "{{ chrony_service_name }}"
+    state: started
+    enabled: true
+  become: true
+
+- name: Sync time now
+  command: chronyc -a makestep
+  changed_when: false
+  become: true
+  failed_when: false

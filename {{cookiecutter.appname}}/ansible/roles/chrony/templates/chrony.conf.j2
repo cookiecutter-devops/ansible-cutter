@@ -1,0 +1,33 @@
+# Chrony configuration for {{ inventory_hostname }}
+# Managed by Ansible
+
+{% for server in chrony_server %}
+server {{ server }} iburst
+{% endfor %}
+
+{% if chrony_pool | length > 0 %}
+{% for pool in chrony_pool %}
+pool {{ pool }}
+{% endfor %}
+{% endif %}
+
+driftfile {{ chrony_driftfile }}
+
+logdir {{ chrony_logdir }}
+
+{% if chrony_enable_kernel_sync | bool %}
+makestep 1.0 3
+{% endif %}
+
+rtcsync
+
+{% if chrony_server_mode | bool %}
+{% for network in chrony_allow %}
+allow {{ network }}
+{% endfor %}
+
+local stratum 10
+{% endif %}
+
+cmdallow 127.0.0.1
+cmdallow ::1

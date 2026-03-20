@@ -1,0 +1,24 @@
+---
+enable_chrony: true
+
+chrony_server:
+  - 0.pool.ntp.org
+  - 1.pool.ntp.org
+  - 2.pool.ntp.org
+
+chrony_server_mode: false
+
+chrony_pool: []
+
+chrony_allow:
+  - 192.168.0.0/16
+  - 10.0.0.0/8
+  - 172.28.128.138/20
+
+chrony_driftfile: /var/lib/chrony/drift
+
+chrony_logdir: /var/log/chrony
+
+chrony_rtc_offset: 0
+
+chrony_enable_kernel_sync: true

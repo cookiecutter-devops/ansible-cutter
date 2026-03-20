@@ -1,26 +1,22 @@
 ---
 - import_playbook: gather-facts.yml
 
-
-
-# - name: Apply role httpd
-#   gather_facts: false
-#   any_errors_fatal: true
-#   hosts:
-#     - docker
-#     - '&enable_httpd_True'
-#   serial: "{{'{{ ansible_serial|default(\'0\') }}'}}"
-#   roles:
-#     - role: httpd
-#       tags: httpd
-#       when: enable_httpd | bool
-
-
-- name: Apply role {{cookiecutter.rolename}}
-  gather_facts: false
-  any_errors_fatal: true
+- name: Prechecks
   hosts: all
-  serial: "{{'{{ ansible_serial|default(\'0\') }}'}}"
+  gather_facts: false
   roles:
-    - role: {{cookiecutter.rolename}}
-      tags: {{cookiecutter.rolename}}
+    - role: prechecks
+      when: "(_action is undefined) or (_action == 'prechecks')"
+  tags: prechecks
+
+- name: Apply role chrony
+  gather_facts: false
+  hosts:
+    - chrony-server
+    - chrony
+    - "&enable_chrony_True"
+  serial: '{{ kolla_serial|default("0") }}'
+  roles:
+    - role: chrony
+      tags: chrony
+      when: "enable_chrony | bool"

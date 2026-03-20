@@ -1,7 +1,10 @@
 # configs/default/extra-vars.yml
 
-# 启用或禁用 HTTPD 服务
-enable_httpd: true
+# 序列号，用于并行执行任务时的顺序，0代表并行执行，其他值代表串行执行
+kolla_serial: "0"
+
+# 启用或禁用 chrony 服务
+enable_chrony: true
 
 # 定义要部署的应用程序版本
 app_version: "1.0.0"

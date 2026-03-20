@@ -1,7 +1,7 @@
 .*
 !.editorconfig
 !.gitignore
-*openrc*
-config
 .vscode/
 .idea/
+*openrc*
+config

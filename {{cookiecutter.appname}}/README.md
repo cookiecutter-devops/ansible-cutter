@@ -1,114 +1,178 @@
 # {{cookiecutter.appname}}
 
+Ansible 部署工具，类似 kolla-ansible，用于快速部署容器化应用。
 
-## 配置目录结构
+## 安装
 
-脚本默认从 `configs/` 目录中选择配置，每个配置目录通常包含：
+### 方式1：从 PyPI 安装（待发布）
 
-- hosts：Ansible inventory 文件
-- env：环境变量文件
-- extra-vars.yml：额外的 Ansible 变量文件
+```sh
+pip install {{cookiecutter.appname}}
+```
 
-通过 `-c` 选项可以指定使用哪个配置目录。
+### 方式2：从源码安装
 
+```sh
+# 克隆仓库
+git clone https://github.com/your-repo/{{cookiecutter.appname}}.git
+cd {{cookiecutter.appname}}
+
+# 安装
+pip install .
+
+# 或者构建 wheel 后安装
+# 构建 wheel
+pip install wheel check-wheel-contents
+python setup.py sdist bdist_wheel
+# 构建完成后，安装 wheel
+pip install dist/{{cookiecutter.appname}}-*.whl
+```
+
+### 方式3：直接运行（无需安装）
+
+```sh
+cd {{cookiecutter.appname}}
+./tools/{{cookiecutter.appname}}/{{cookiecutter.appname}} deploy
+```
+
+## 配置
+
+### 方式1：从源码运行时的配置
+
+```sh
+# 从源码目录直接运行
+cd {{cookiecutter.appname}}
+./tools/{{cookiecutter.appname}}/{{cookiecutter.appname}} -i /path/to/inventory deploy
+```
+
+### 方式2：全局安装后的配置
+
+安装后需要复制配置文件：
+
+```sh
+# 复制 Ansible playbook 和配置文件到全局目录
+sudo mkdir -p /usr/share/{{cookiecutter.appname}}
+sudo cp -r ansible /usr/share/{{cookiecutter.appname}}/
+sudo cp -r etc/{{cookiecutter.appname}} /etc/
+
+# 或者使用环境变量指定目录
+export {{cookiecutter.appname}}_DIR=/path/to/{{cookiecutter.appname}}
+export {{cookiecutter.appname}}_CONFIG_DIR=/path/to/config
+```
 
 ## 使用
 
-
 ```sh
-# 初始化
-cd {{cookiecutter.appname}}
-pip install -r requirements.txt
+# 显示帮助
+{{cookiecutter.appname}} --help
 
-git init .
-git add .
-git commit -m "init project"
-git tag -a v0.1.0 -m "initial release"
+# 查看版本
+{{cookiecutter.appname}} --version
 
-# pip install .
-# 或者
-python setup.py install
-
-# 拷贝配置文件
-cp -rf /usr/share/{{cookiecutter.appname}}/etc_examples/{{cookiecutter.appname}}/ /etc/{{cookiecutter.appname}}/
-
-
-# 显示帮助信息
-{{cookiecutter.appname}} help
-# 或
-{{cookiecutter.appname}} -h
-
-# 回显命令 - 不实际运行
+# 回显命令（不实际运行）
 {{cookiecutter.appname}} -E deploy
-# ansible-playbook -i /etc/kolla_k8s/default/hosts -e @/etc/kolla_k8s/default/extra-vars.yml -e _action=deploy /usr/share/kolla_k8s/ansible/site.yml
 
-# 模拟运行配置命令，不实际更改任何内容：
+# 模拟运行
 {{cookiecutter.appname}} -n deploy
 
-# 使用 -i 指定 inventory 文件：
-{{cookiecutter.appname}} -E -i /etc/kolla_k8s/my_inventory.yml deploy
+# 使用自定义 inventory
+{{cookiecutter.appname}} -i /path/to/inventory deploy
 
-# 安装 Ansible 角色和依赖项：
+# 限制主机
+{{cookiecutter.appname}} -l compute deploy
+{{cookiecutter.appname}} --limit control,compute prechecks
+
+# 安装 Ansible 角色依赖
 {{cookiecutter.appname}} requirements
 
-# 使用默认配置运行 Ansible：
-{{cookiecutter.appname}} deploy
+# 部署操作
+{{cookiecutter.appname}} deploy              # 部署
+{{cookiecutter.appname}} config              # 配置
+{{cookiecutter.appname}} remove              # 移除
+{{cookiecutter.appname}} bootstrap-servers    # 初始化服务器
+{{cookiecutter.appname}} prechecks           # 部署前检查
+{{cookiecutter.appname}} postchecks          # 部署后检查
+{{cookiecutter.appname}} pull                # 拉取镜像
+{{cookiecutter.appname}} stop                # 停止服务
+{{cookiecutter.appname}} reconfigure         # 重新配置
+{{cookiecutter.appname}} restart             # 重启服务
 
-
-# 使用特定配置目录运行：
-{{cookiecutter.appname}} -c /etc/configs/default deploy
-
-# 增加详细程度：
+# 增加详细程度
 {{cookiecutter.appname}} -v deploy
 
+# 设置额外的 Ansible 变量
+{{cookiecutter.appname}} -e "env=production" -E deploy
+```
 
-# 使用 Ansible ping 模块检查所有主机的连通性：
-{{cookiecutter.appname}} -E ping
-# 或者只检查 docker 组的主机：
+## 组件操作
+
+```sh
+# chrony 操作
+{{cookiecutter.appname}} -t chrony deploy    # 部署 chrony
+{{cookiecutter.appname}} -t chrony config    # 重新配置 chrony
+{{cookiecutter.appname}} -t chrony remove    # 移除 chrony
+
+# prechecks 操作
+{{cookiecutter.appname}} prechecks           # 运行所有预检查
+```
+
+## 运维命令
+
+```sh
+# 检查主机连通性
+{{cookiecutter.appname}} ping
 {{cookiecutter.appname}} ping docker
-# 或者只检查 server1 主机：
-{{cookiecutter.appname}} ping server1
 
-
-
-# 在 webservers 组上执行 df -h 命令：
-{{cookiecutter.appname}} exec docker "df -h"
-# 在所有主机上执行 uptime 命令：
+# 在主机组上执行命令
 {{cookiecutter.appname}} exec all "uptime"
-#使用 Ansible 库存中的凭证 SSH 到 web01 主机：
+{{cookiecutter.appname}} exec docker "df -h"
+
+# SSH 到主机
 {{cookiecutter.appname}} ssh server1
-# SSH 到主机并执行命令：
-{{cookiecutter.appname}} ssh server1 "ls -la /etc/ssh"
+# SSG 到主机执行命令
+{{cookiecutter.appname}} ssh server1 "uptime"
 
-
-# 将所有主机的 SSH 密钥重新扫描到 known_hosts 文件：
-{{cookiecutter.appname}} rescan
-
-# 查看当前配置的环境和环境变量：
-{{cookiecutter.appname}} env
-
-
-# 列出所有的主机
+# 列出所有主机
 {{cookiecutter.appname}} list
 
-# 删除保存的配置文件：
-{{cookiecutter.appname}} clean
+# 查看环境变量
+{{cookiecutter.appname}} env
+```
 
+## 环境变量
 
-# 运行自定义的 playbook 文件：
-{{cookiecutter.appname}} -p ansible/custom-playbook.yml config
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `{{cookiecutter.appname}}_DIR` | 安装目录 | `/usr/share/{{cookiecutter.appname}}` |
+| `{{cookiecutter.appname}}_CONFIG_DIR` | 配置目录 | `/etc/{{cookiecutter.appname}}` |
 
+## 目录结构
 
-#运行时设置额外的 Ansible 变量：
-{{cookiecutter.appname}} -E -e  "env=production debug=true" config
+```sh
+/usr/share/{{cookiecutter.appname}}/          # 安装目录（需手动创建）
+├── ansible/                   # Ansible playbooks 和 roles
+│   ├── site.yml              # 主 playbook
+│   ├── gather-facts.yml      # 收集主机信息
+│   └── roles/                # Ansible roles
+│       ├── chrony/           # 时间同步
+│       ├── prechecks/        # 部署前检查
+│       └── common/           # 通用角色
+└── etc_examples/             # 配置示例
+    └── {{cookiecutter.appname}}/            # 配置目录模板
+        ├── hosts             # inventory 文件
+        ├── env               # 环境变量
+        └── extra-vars.yml    # 额外变量
+```
 
+## 示例
 
-# 使用特定配置和变量运行 playbook
-{{cookiecutter.appname}} -c configs/production -e "env=production" -p ansible/deploy.yml config
+```sh
+# 详细模式下的模拟部署
+{{cookiecutter.appname}} -v -n deploy
 
-# 详细模式下的模拟运行
-{{cookiecutter.appname}} -v -n -c configs/staging config
+# 生产环境部署
+{{cookiecutter.appname}} -e "env=production" -v deploy
 
-# 在多个主机上执行复杂命令
-{{cookiecutter.appname}} exec docker "ps aux |grep sshd"
+# 详细输出检查
+{{cookiecutter.appname}} -v prechecks
 ```

@@ -1,0 +1,8 @@
+---
+os_family_package_map:
+  RedHat:
+    package: chrony
+    service: chronyd
+  Debian:
+    package: chrony
+    service: chrony
